@@ -60,7 +60,7 @@ LoadBitmap:
     lda P0Color,Y             ; load player color from lookup table
     sta COLUP0                ; set color for player 0 slice
     dex
-    bne Scanline              ; repeat nxt scanline until finished
+    bne Scanline              ; repeat next scanline until finished
 
 Overscan:
     lda #2
