@@ -1,3 +1,4 @@
+;; Exercise: Make a range from 40 pixels to 80 pixels
     processor 6502
 
     include "../UTILS/vcs.h"
@@ -12,14 +13,14 @@ P0XPos    byte    ; sprite X coordinate
 
 Reset:
     CLEAN_START   ; macro to clean memory and TIA
- 
-    ldx #$00      ; black background color
+        
+    ldx #$9C     ; light purple background color
     stx COLUBK    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
-    lda #50
+    lda #40       ; Register A = 40
     sta P0XPos    ; initialize player X coordinate
 
 StartFrame:
@@ -49,7 +50,6 @@ StartFrame:
 DivideLoop: 
     sbc #15        ; A -= 15
     bcs DivideLoop ; loop while carry flag is still set
-
     eor #7         ; adjust the remainder in A between -8 and 7
     asl            ; shift left by 4 as HMP0 uses only 4 bits
     asl
@@ -63,10 +63,9 @@ DivideLoop:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Let the TIA output the (37-2) recommended lines of VBLANK
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    REPEAT 35      ; 35 because 2 lines of VBLANK were spent
-        sta WSYNC  ;  with the code above
+    REPEAT 35      ; 35 because 2 lines of VBLANK were spent...
+        sta WSYNC  ;  ... with the code above
     REPEND
-
     lda #0
     sta VBLANK     ; turn VBLANK off
 
@@ -110,11 +109,19 @@ Overscan:
 ;; Increment X coordinate before next frame for animation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     inc P0XPos
+    lda #80
+    cmp P0XPos
+    beq ResetPos
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Loop to next frame
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jmp StartFrame
+
+ResetPos:
+    lda #40       ; Register A = 40
+    sta P0XPos    ; initialize player X coordinate
+    jmp StartFrame 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Lookup table for the player graphics bitmap
