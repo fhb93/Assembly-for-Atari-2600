@@ -102,7 +102,7 @@ StartFrame:
     sta VBLANK               ; turn off VBLANK                      
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  Display the 192 visible scanlines of our main game 
+;;  Display the 96 visible scanlines of our main game (2-line kernel)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 GameVisibleLine:
     lda #$84                 
@@ -123,9 +123,40 @@ GameVisibleLine:
     lda #0
     sta PF2                   ; setting PF2 bit paattern
 
-    ldx #192                  ; X counts the number of remaining scanlines
+    ldx #96                   ; X counts the number of remaining scanlines
 .GameLineLoop:
-    sta WSYNC
+.AreWeInsidePlayerSprite:
+    txa                       ; transfer X to A
+    sec                       ; make sure the carry flag is set before subtraction 
+    sbc JetYPos               ; subtract sprite Y-coordinate
+    cmp P0_HEIGHT             ; are we inside the sprite height bounds?
+    bcc .DrawSpriteP0         ; if result < SpriteHeight, call the draw routine
+    lda #0                    ; else, set lookup index to zero
+.DrawSpriteP0:
+    tay                       ; load Y so we can work with the pointer
+    lda (P0SpritePtr),Y       ; load player0 bitmap data from lookup table
+    sta WSYNC                 ; wait for scanline
+    sta GRP0                  ; set graphics for player0
+    lda (P0ColorPtr),Y        ; load player color from lookup table
+    sta COLUP0                ; set graphics of player0
+   
+.AreWeInsideBomberSprite:
+    txa                       ; transfer X to A
+    sec                       ; make sure the carry flag is set before subtraction 
+    sbc BomberYPos               ; subtract sprite Y-coordinate
+    cmp P1_HEIGHT             ; are we inside the sprite height bounds?
+    bcc .DrawSpriteP1         ; if result < SpriteHeight, call the draw routine
+    lda #0                    ; else, set lookup index to zero
+.DrawSpriteP1:
+    tay                       ; load Y so we can work with the pointer
+    lda #%00000101
+    sta NUSIZ1
+    lda (P1SpritePtr),Y       ; load player0 bitmap data from lookup table
+    sta WSYNC                 ; wait for scanline
+    sta GRP1                  ; set graphics for player0
+    lda (P1ColorPtr),Y        ; load player color from lookup table
+    sta COLUP1                ; set graphics of player0
+   
     dex                       ; X--
     bne .GameLineLoop         ; repeat next main game scanline until finished
 
@@ -182,21 +213,22 @@ P0Frame2:
     .byte #%00000100;$9A
     .byte #%00000100;--
 
-P1Frame1:
-    .byte #%00000000
-    .byte #%00010000;$0E
-    .byte #%00111000;$06
-    .byte #%00010000;$0E
-    .byte #%00010000;$0E
-    .byte #%00111000;$0E
-    .byte #%01111100;$0E
-    .byte #%00010000;$9A
-    .byte #%00010000;--
+P1Frame0:
+    .byte #%00000000;$00
+    .byte #%00001000;$40
+    .byte #%00101010;$AE
+    .byte #%01111111;$44
+    .byte #%00011100;$44
+    .byte #%00001000;$44
+    .byte #%00001000;$44
+    .byte #%00011100;$40
+    .byte #%00001000;$40
 
 
 ;---Color Data from PlayerPal 2600---
 
 P0ColorFrame0:
+    .byte #$00
     .byte #$0E;
     .byte #$06;
     .byte #$0E;
@@ -205,8 +237,9 @@ P0ColorFrame0:
     .byte #$0E;
     .byte #$9A;
     .byte #$0E;
-
+    
 P0ColorFrame1:
+    .byte #$00
     .byte #$0E;
     .byte #$06;
     .byte #$0E;
@@ -217,6 +250,7 @@ P0ColorFrame1:
     .byte #$0E;
 
 P0ColorFrame2:
+    .byte #$00
     .byte #$0E;
     .byte #$06;
     .byte #$0E;
@@ -227,14 +261,16 @@ P0ColorFrame2:
     .byte #$0E;
 
 P1ColorFrame0:
-    .byte #$0E;
-    .byte #$06;
-    .byte #$0E;
-    .byte #$0E;
-    .byte #$0E;
-    .byte #$0E;
-    .byte #$9A;
-    .byte #$0E;
+    .byte #$00
+    .byte #$40
+    .byte #$AE;
+    .byte #$44;
+    .byte #$44;
+    .byte #$44;
+    .byte #$44;
+    .byte #$40;
+    .byte #$40;
+    .byte #$0E
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Complete ROM size with exactly 4KB
