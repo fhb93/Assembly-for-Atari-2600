@@ -17,7 +17,7 @@
     org $80
 
 JetXPos         byte          ; player0 x-position
-JetYPos         byte          ; player y-position
+JetYPos         byte          ; player0 y-position
 BomberXPos      byte          ; player1 x-position (enemy x)
 BomberYPos      byte          ; player1 y-position (enemy y)
 P0SpritePtr     word          ; pointer to player0 sprite lookup table
