@@ -49,9 +49,8 @@ Reset:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     lda #10
     sta JetYPos               ; JetYPos = 10
-    
-    lda #60
-    sta JetXPos               ; JetXPos = 60
+    lda #0
+    sta JetXPos               ; JetXPos = 0
     lda #83
     sta BomberYPos
     lda #54
@@ -80,14 +79,28 @@ Reset:
     lda #>P1ColorFrame0
     sta P1ColorPtr+1
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Start the main display loop and frame rendering 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 StartFrame:
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Calculations and tasks performed in the pre-VBlank
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    lda JetXPos
+    ldy #0
+    jsr SetObjectXPos        ; set player0 horizontal position
+
+    lda BomberXPos
+    ldy #1
+    jsr SetObjectXPos        ; set player1 horizontal position
+
+    sta WSYNC
+    sta HMOVE                ; apply the horizontal offsets previously set
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Display VSYNC and VBLANK 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     lda #2
     sta VBLANK               ; turn on VBLANK (0010)
     sta VSYNC                ; turn on VSYNC
@@ -166,16 +179,65 @@ GameVisibleLine:
     lda #2
     sta VBLANK                ; turn VBLANK on again
     REPEAT 30                 
-        sta VBLANK            ; display 30 recommended lines of VBLANK Overscan
+        sta WSYNC             ; display 30 recommended lines of VBLANK Overscan
     REPEND
     lda #0
     sta VBLANK                ; turn off VBLANK
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Process joystick input for player0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CheckP0Up:
+    lda #%00010000            ; player0 joystick up
+    bit SWCHA
+    bne CheckP0Down           ; if bit pattern doesnt match, bypass Up block
+    inc JetYPos
+
+CheckP0Down:
+    lda #%00100000            ; player0 joystick down
+    bit SWCHA
+    bne CheckP0Left           ; if bit pattern doesnt match, bypass Down block
+    dec JetYPos
+
+CheckP0Left:
+    lda #%01000000            ; player0 joystick left
+    bit SWCHA
+    bne CheckP0Right          ; if bit pattern doesnt match, bypass Left block
+    dec JetXPos
+
+CheckP0Right:
+    lda #%10000000            ; player0 joystick right
+    bit SWCHA
+    bne EndInputCheck         ; if bit pattern doesnt match, bypass Right block
+    inc JetXPos
+
+EndInputCheck:                ; fallback when no input was performed
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Loop back to start a brand new frame 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     jmp StartFrame            ; continue to display the next frame
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Subroutine to handle object horizontal position with fine offset
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  A is the target x-coordinate position in pixels of our object
+;;  Y is the object type (0:player0, 1:player1, 2:missile0, 3:missile1, 4:ball)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+SetObjectXPos subroutine
+    sta WSYNC                 ; start a fresh new scanline
+    sec                       ; make sure carry-flag is set before subtraction
+.Div15Loop
+    sbc #15                   ; subtract 15 from accumulator
+    bcs .Div15Loop            ; loop until carry-flag is clear
+    eor #7                    ; handle offset range from -8 to 7
+    asl
+    asl
+    asl
+    asl
+    sta HMP0,Y                ; four shift lefts to get only the top 4 bits 
+    sta RESP0,Y               ; store the fine offset to the correct HMxx
+    rts                       ; fix object position in 15-step increment
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Declare ROM lookup tables
