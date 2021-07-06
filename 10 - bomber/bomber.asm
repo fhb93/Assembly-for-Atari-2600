@@ -25,6 +25,7 @@ P0ColorPtr      word          ; pointer to player0 color lookup table
 P1SpritePtr     word          ; pointer to enemy sprite lookup table
 P1ColorPtr      word          ; pointer to enemy color lookup table
 P0AnimOffset    byte          ; player0 sprite frame offset for "animation"
+Random          byte          ; random number generated to set enemy position
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Define constants  
@@ -50,12 +51,14 @@ Reset:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     lda #10
     sta JetYPos               ; JetYPos = 10
-    lda #0
+    lda #68
     sta JetXPos               ; JetXPos = 0
     lda #83
     sta BomberYPos
     lda #54
     sta BomberXPos
+    lda #%11010100
+    sta Random                ; Random = $D4
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Initialize the pointers to the correct lookup table addresses 
@@ -63,7 +66,7 @@ Reset:
     lda #<P0Frame1
     sta P0SpritePtr           ; lo-byte pointer for player sprite lookup table
     lda #>P0Frame1   
-    sta P0SpritePtr+1          ; hi-byte pointer for player sprite lookup table
+    sta P0SpritePtr+1         ; hi-byte pointer for player sprite lookup table
 
     lda #<P0ColorFrame1       
     sta P0ColorPtr    
@@ -116,6 +119,20 @@ StartFrame:
     sta VBLANK               ; turn off VBLANK                      
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Display the scoreboard lines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    lda #0                   ; clear TIA registers for each new frame 
+    sta PF0
+    sta PF1 
+    sta PF2
+    sta GRP0
+    sta GRP1
+    sta COLUPF
+    REPEAT 20
+        sta WSYNC            ; display 20 scanlines where the scoreboard goes
+    REPEND    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Display the 96 visible scanlines of our main game (2-line kernel)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 GameVisibleLine:
@@ -137,7 +154,7 @@ GameVisibleLine:
     lda #0
     sta PF2                   ; setting PF2 bit paattern
 
-    ldx #96                   ; X counts the number of remaining scanlines
+    ldx #84                   ; X counts the number of remaining scanlines
 .GameLineLoop:
 .AreWeInsidePlayerSprite:
     txa                       ; transfer X to A
@@ -237,14 +254,33 @@ UpdateBomberPosition:
     bmi .ResetBomberPosition  ; if it is < 0, then reset y-position to the top
     dec BomberYPos            ; else, decrement enemy y-position for next frame 
     jmp EndPositionUpdate
-
-.ResetBomberPosition
-    lda #96
-    sta BomberYPos
-    ; TODO: set bomber X position to random number
+.ResetBomberPosition    
+    jsr GetRandomBomberPos    ; call subroutine for random x-position
 
 EndPositionUpdate:            ; fallback for the position update code
-    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Check for object collision 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CheckCollisionP0P1:
+    lda #%10000000            ; CXPPMM bit 7 detects P0 and P1 collision
+    bit CXPPMM                ; check CXPPMM bit 7 with the above pattern
+    bne .CollisionP0P1        ; if collision P0 and P1 happened, game over
+    jmp CheckCollisionP0PF    ; else, skip to next check
+.CollisionP0P1:
+    jsr GameOver              ; call GameOver subroutine
+
+CheckCollisionP0PF:
+    lda #%10000000            ; CXP0FB bit 7 detects P0 and PF collision
+    bit CXP0FB                ; check CXP0FB bit 7 with the above pattern
+    bne .CollisionP0PF        ; if collision P0 and P1 happened
+    jmp EndCollisionCheck     ; else, skip to the end check
+
+.CollisionP0PF:
+    jsr GameOver              ; call gameOver subroutine
+
+EndCollisionCheck:            ; fallback
+    sta CXCLR                 ; clear all collision flags before the next frame
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Loop back to start a brand new frame 
@@ -271,6 +307,44 @@ SetObjectXPos subroutine
     sta HMP0,Y                ; four shift lefts to get only the top 4 bits 
     sta RESP0,Y               ; store the fine offset to the correct HMxx
     rts                       ; fix object position in 15-step increment
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Game Over subroutine 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+GameOver subroutine
+    lda #$30
+    sta COLUBK
+    rts
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Subroutine to generate a Linear-Feedback Shift Register random number 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Generate a LFSR random number
+;;  Divide the random value by 4 to limit the size of the result to match river 
+;;  Add 30 to compensate for the left green playfield
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+GetRandomBomberPos subroutine
+    lda Random
+    asl
+    eor Random
+    asl 
+    eor Random
+    asl
+    asl
+    eor Random
+    asl
+    rol Random
+
+    lsr
+    lsr                      ; divide by 4
+    sta BomberXPos           ; save it to the variable BomberXPos
+    lda #30
+    adc BomberXPos           ; adds 30 + BomberXPos to compensate left PF
+    sta BomberXPos           ; and sets to the new value to the bomber x-position
+    
+    lda #96
+    sta BomberYPos           ; set the y-posotion to the top of the screen
+    rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Declare ROM lookup tables
