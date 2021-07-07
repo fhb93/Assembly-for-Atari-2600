@@ -55,7 +55,7 @@ Reset:
     sta JetXPos               ; JetXPos = 0
     lda #83
     sta BomberYPos
-    lda #54
+    lda #62
     sta BomberXPos
     lda #%11010100
     sta Random                ; Random = $D4
@@ -195,6 +195,7 @@ GameVisibleLine:
 
     lda #0
     sta P0AnimOffset          ; reset player animation frame to zero each frame
+    sta WSYNC                 ; wait for a scanline
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Display Overscan 
