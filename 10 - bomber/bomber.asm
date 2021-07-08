@@ -289,7 +289,12 @@ CheckP0Up:
     lda #%00010000            ; player0 joystick up
     bit SWCHA
     bne CheckP0Down           ; if bit pattern doesnt match, bypass Up block
+   
+    lda #77
+    cmp JetYPos
+    beq CheckP0Down
     inc JetYPos
+   
     lda #0
     sta P0AnimOffset
 
@@ -297,6 +302,11 @@ CheckP0Down:
     lda #%00100000            ; player0 joystick down
     bit SWCHA
     bne CheckP0Left           ; if bit pattern doesnt match, bypass Down block
+
+    lda #0
+    cmp JetYPos
+    beq CheckP0Left
+
     dec JetYPos
     lda #0
     sta P0AnimOffset
@@ -305,6 +315,12 @@ CheckP0Left:
     lda #%01000000            ; player0 joystick left
     bit SWCHA
     bne CheckP0Right          ; if bit pattern doesnt match, bypass Left block
+
+    lda #30
+    cmp JetXPos
+    beq CheckP0Right
+
+
     dec JetXPos
     lda P0_HEIGHT             ; 9
     sta P0AnimOffset          ; set animation offset 
@@ -313,6 +329,11 @@ CheckP0Right:
     lda #%10000000            ; player0 joystick right
     bit SWCHA
     bne EndInputCheck         ; if bit pattern doesnt match, bypass Right block
+
+    lda #103
+    cmp JetXPos
+    beq EndInputCheck
+
     inc JetXPos
     lda P0_HEIGHT             ; 9
     sta P0AnimOffset          ; set animation offset 
@@ -629,7 +650,6 @@ P1Frame0:
     .byte #%00001000;$44
     .byte #%00011100;$40
     .byte #%00001000;$40
-
 
 ;---Color Data from PlayerPal 2600---
 
