@@ -69,9 +69,9 @@ Reset:
     sta BomberXPos
     lda #%11010100
     sta Random                ; Random = $D4
-    lda #4
+    lda #0
     sta Score
-    lda #8
+    lda #0
     sta Timer                 ; Score = Timer = 0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,12 +140,12 @@ StartFrame:
 ;;  Display the scoreboard lines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     lda #0                   
+    sta COLUBK               ; reset TIA registers before displaying the score
     sta PF0
     sta PF1 
     sta PF2
     sta GRP0
     sta GRP1                 
-    sta COLUBK               ; reset TIA registers before displaying the score
     sta CTRLPF               ; disable playfield reflection
     
     lda #$1E                 ;
@@ -290,7 +290,7 @@ CheckP0Up:
     bit SWCHA
     bne CheckP0Down           ; if bit pattern doesnt match, bypass Up block
    
-    lda #77
+    lda #70
     cmp JetYPos
     beq CheckP0Down
     inc JetYPos
@@ -303,7 +303,7 @@ CheckP0Down:
     bit SWCHA
     bne CheckP0Left           ; if bit pattern doesnt match, bypass Down block
 
-    lda #0
+    lda #5
     cmp JetYPos
     beq CheckP0Left
 
@@ -316,7 +316,7 @@ CheckP0Left:
     bit SWCHA
     bne CheckP0Right          ; if bit pattern doesnt match, bypass Left block
 
-    lda #30
+    lda #35
     cmp JetXPos
     beq CheckP0Right
 
@@ -330,7 +330,7 @@ CheckP0Right:
     bit SWCHA
     bne EndInputCheck         ; if bit pattern doesnt match, bypass Right block
 
-    lda #103
+    lda #100
     cmp JetXPos
     beq EndInputCheck
 
@@ -352,7 +352,21 @@ UpdateBomberPosition:
     jmp EndPositionUpdate
 .ResetBomberPosition    
     jsr GetRandomBomberPos    ; call subroutine for random x-position
+    
+.SetScoreValues:
+    sed                       ; set BCD mode for Score and timer values
 
+    lda Score
+    clc
+    adc #1
+    sta Score                 ; add 1 to the Score (BCD does not like INC operation)
+ 
+    lda Timer
+    clc
+    adc #1   
+    sta Timer                 ; add 1 to the Timer (BCD does not like INC operation)
+    cld                       ; disable BCD after updating Score and Timer
+   
 EndPositionUpdate:            ; fallback for the position update code
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,10 +391,14 @@ CheckCollisionP0P1:
 
 EndCollisionCheck:            ; fallback
     sta CXCLR                 ; clear all collision flags before the next frame
+   ; lda #0 
+   ; cmp BomberYPos            ; if Bomber Y is negative
+   ; bne NewFrame              ; not 0 ? Jump to new frame
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Loop back to start a brand new frame 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;NewFrame:   
     jmp StartFrame            ; continue to display the next frame
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

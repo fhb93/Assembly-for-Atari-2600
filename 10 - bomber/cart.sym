@@ -5,12 +5,13 @@
 0.DrawSpriteP1           f15b              (R )
 0.FREE_BYTES             0000                  
 0.GameLineLoop           f139              (R )
-0.P0P1Collided           f21e              (R )
+0.P0P1Collided           f22e              (R )
 0.ResetBomberPosition    f20f              (R )
 0.ScoreDigitLoop         f0c8              (R )
+0.SetScoreValues         f212                  
 1.CLEAR_STACK            f006              (R )
-3.Div15Loop              f232              (R )
-6.PrepareScoreLoop       f26e              (R )
+3.Div15Loop              f242              (R )
+6.PrepareScoreLoop       f27e              (R )
 AUDC0                    0015                  
 AUDC1                    0016                  
 AUDF0                    0017                  
@@ -19,8 +20,8 @@ AUDV0                    0019
 AUDV1                    001a                  
 BomberXPos               0082              (R )
 BomberYPos               0083              (R )
-CalculateDigitOffset     f26c              (R )
-CheckCollisionP0P1       f212                  
+CalculateDigitOffset     f27c              (R )
+CheckCollisionP0P1       f222                  
 CheckP0Down              f1ca              (R )
 CheckP0Left              f1dd              (R )
 CheckP0Right             f1f0              (R )
@@ -39,17 +40,17 @@ CXM1P                    0001
 CXP0FB                   0002                  
 CXP1FB                   0003                  
 CXPPMM                   0007              (R )
-Digits                   f28d              (R )
+Digits                   f29d              (R )
 DIGITS_HEIGHT            0005              (R )
 ENABL                    001f                  
 ENAM0                    001d                  
 ENAM1                    001e                  
-EndCollisionCheck        f221              (R )
+EndCollisionCheck        f231              (R )
 EndInputCheck            f203              (R )
-EndPositionUpdate        f212              (R )
-GameOver                 f243              (R )
+EndPositionUpdate        f222              (R )
+GameOver                 f253              (R )
 GameVisibleLine          f11f                  
-GetRandomBomberPos       f24e              (R )
+GetRandomBomberPos       f25e              (R )
 GRP0                     001b              (R )
 GRP1                     001c              (R )
 HMBL                     0024                  
@@ -73,18 +74,18 @@ NUSIZ1                   0005              (R )
 OnesDigitOffset          0087              (R )
 P0_HEIGHT                0009              (R )
 P0AnimOffset             0093              (R )
-P0ColorFrame0            f301                  
-P0ColorFrame1            f30a              (R )
-P0ColorFrame2            f313                  
+P0ColorFrame0            f311                  
+P0ColorFrame1            f31a              (R )
+P0ColorFrame2            f323                  
 P0ColorPtr               008d              (R )
-P0Frame0                 f2dd                  
-P0Frame1                 f2e6              (R )
-P0Frame2                 f2ef                  
+P0Frame0                 f2ed                  
+P0Frame1                 f2f6              (R )
+P0Frame2                 f2ff                  
 P0SpritePtr              008b              (R )
 P1_HEIGHT                0009              (R )
-P1ColorFrame0            f31c              (R )
+P1ColorFrame0            f32c              (R )
 P1ColorPtr               0091              (R )
-P1Frame0                 f2f8              (R )
+P1Frame0                 f308              (R )
 P1SpritePtr              008f              (R )
 PF0                      000d              (R )
 PF1                      000e              (R )
@@ -104,9 +105,9 @@ RiverColor               0098              (R )
 RSYNC                    0003                  
 Score                    0084              (R )
 ScoreSprite              0095              (R )
-SetObjectXPos            f22f              (R )
-SetTerrainRiverColor     f226              (R )
-Sleep12Cycles            f28c              (R )
+SetObjectXPos            f23f              (R )
+SetTerrainRiverColor     f236              (R )
+Sleep12Cycles            f29c              (R )
 StartFrame               f047              (R )
 SWACNT                   0281                  
 SWBCNT                   0283                  
